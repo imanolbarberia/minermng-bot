@@ -1,0 +1,8 @@
+# Backup files
+*~ 
+
+# IDE files
+.idea
+
+# Telegram configuration files
+.telegram
