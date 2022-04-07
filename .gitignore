@@ -3,6 +3,10 @@
 
 # IDE files
 .idea
+__pycache__
 
 # Telegram configuration files
 .telegram
+
+# Databases
+*.db
