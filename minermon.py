@@ -3,9 +3,12 @@
 import telebot
 import os
 import sys
+from MinerData import MinerData
 
 CFG_BOTTOKEN_FILE = ".telegram/bot_token"
 CFG_USERID_FILE = ".telegram/user_id"
+
+md = MinerData("miners.db")
 
 
 def init_bot():
@@ -76,7 +79,13 @@ def cmd_list(bot: telebot.TeleBot, msg: telebot.types.Message):
     :param msg:
     :return:
     """
-    pass
+    global md
+    mlist = md.get_miners()
+    lst = ""
+    for row in mlist:
+        lst += "\U0001F538 {} ({})\n".format(row[1], row[3])
+
+    bot.reply_to(msg, lst)
 
 
 def handle_commands(bot: telebot.TeleBot, msg: telebot.types.Message):
@@ -109,7 +118,6 @@ def main():
     ]
 
     (bot, usr) = init_bot()
-    bot.send_message(usr, "[LOG]: Bot initialized :iphone:")
 
     @bot.message_handler(commands=available_commands)
     def hndl_cmds(message: telebot.types.Message):
