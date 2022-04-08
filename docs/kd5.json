@@ -1,0 +1,69 @@
+{
+  "status": 2,
+  "data": [
+    {
+      "valid": 20,
+      "av_hashrate": 4536168.484,
+      "rejected": 18,
+      "time": 13779,
+      "id": 0,
+      "powerplan": 0,
+      "hwerrors": 290,
+      "fanspeed": "4920 rpm / 4980 rpm / 4920 rpm / 4920 rpm",
+      "accepted": 1807,
+      "hwerr_ration": 0.002499,
+      "nonces": 115353,
+      "hashrate": 4449178.952,
+      "temp": "80.0 °C / 70.3 °C",
+      "minerstatus": 0
+    },
+    {
+      "valid": 20,
+      "av_hashrate": 4497844.876,
+      "rejected": 19,
+      "time": 13779,
+      "id": 1,
+      "powerplan": 0,
+      "hwerrors": 165,
+      "fanspeed": "4920 rpm / 4920 rpm / 4920 rpm / 4920 rpm",
+      "accepted": 1706,
+      "hwerr_ration": 0.001441,
+      "nonces": 114261,
+      "hashrate": 4448282.304,
+      "temp": "84.0 °C / 74.5 °C",
+      "minerstatus": 0
+    },
+    {
+      "valid": 20,
+      "av_hashrate": 4518028.903,
+      "rejected": 18,
+      "time": 13779,
+      "id": 2,
+      "powerplan": 0,
+      "hwerrors": 138,
+      "fanspeed": "4920 rpm / 4920 rpm / 4920 rpm / 4920 rpm",
+      "accepted": 1831,
+      "hwerr_ration": 0.001218,
+      "nonces": 114748,
+      "hashrate": 4037570.752,
+      "temp": "83.0 °C / 73.2 °C",
+      "minerstatus": 0
+    },
+    {
+      "valid": 20,
+      "av_hashrate": 4512037.848,
+      "rejected": 15,
+      "time": 13779,
+      "id": 3,
+      "powerplan": 0,
+      "hwerrors": 72,
+      "fanspeed": "4920 rpm / 4920 rpm / 4920 rpm / 4920 rpm",
+      "accepted": 1762,
+      "hwerr_ration": 0.000612,
+      "nonces": 114527,
+      "hashrate": 4873612.921,
+      "temp": "81.0 °C / 71.0 °C",
+      "minerstatus": 0
+    }
+  ]
+}

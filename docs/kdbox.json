@@ -1,0 +1,21 @@
+{
+  "status": 2,
+  "data": [
+    {
+      "valid": 6,
+      "av_hashrate": 1616156.205,
+      "rejected": 27,
+      "time": 2034,
+      "id": 0,
+      "powerplan": 0,
+      "hwerrors": 816,
+      "fanspeed": "2940 rpm / 2880 rpm",
+      "accepted": 6427,
+      "hwerr_ration": 0.0005679999999999999,
+      "nonces": 1434753,
+      "hashrate": 1640120.199,
+      "temp": "84.0 °C / 51.6 °C",
+      "minerstatus": 0
+    }
+  ]
+}
