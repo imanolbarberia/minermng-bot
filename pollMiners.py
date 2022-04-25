@@ -3,6 +3,7 @@
 import sqlite3
 from os import path
 import configparser
+import json
 
 DEFAULT_CONFIG_FILE = "minermon.cfg"
 
@@ -29,6 +30,24 @@ def create_db(c):
     c.commit()
 
 
+def query_miner_data(miner):
+    print(miner)
+
+
+def query_miner_data_dbg(miner):
+    m_type = miner[2]
+    m_ip = miner[3]
+    print("[DEBUG]: Querying {} ({})...".format(m_ip, m_type))
+
+    mf = open("docs/{}.json".format(m_type), "r")
+    ret = json.load(mf)["data"]
+    mf.close()
+
+    print("[DEBUG]: Size: {}".format(len(ret)))
+
+    return ret
+
+
 def main():
     """
     MAIN FUNCTION
@@ -41,7 +60,8 @@ def main():
     else:
         cfg = create_default_config()
 
-    dbfile = cfg["DEFAULT"]["db"]
+    dbfile = cfg["DEFAULT"].get("db")
+    dbg = (cfg["DEFAULT"].get("debug") == "yes")
     con = sqlite3.connect(dbfile)
     create_db(con)
 
@@ -50,7 +70,11 @@ def main():
 
     if len(minerlist) > 0:
         for miner in minerlist:
-            print(miner)
+            if dbg:
+                k = query_miner_data_dbg(miner)
+                print(k)
+            else:
+                query_miner_data(miner)
     else:
         print("The miners list is empty. Exiting...")
 
