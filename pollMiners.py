@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import sqlite3
 from os import path
 import configparser
 
@@ -19,6 +20,15 @@ def create_default_config():
     return cfg
 
 
+def create_db(c):
+    c.execute("""CREATE TABLE IF NOT EXISTS minerlist (
+                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                 name TEXT,
+                 type TEXT,
+                 ip TEXT);""")
+    c.commit()
+
+
 def main():
     """
     MAIN FUNCTION
@@ -32,6 +42,17 @@ def main():
         cfg = create_default_config()
 
     dbfile = cfg["DEFAULT"]["db"]
+    con = sqlite3.connect(dbfile)
+    create_db(con)
+
+    res = con.execute("SELECT * FROM minerlist")
+    minerlist = res.fetchall()
+
+    if len(minerlist) > 0:
+        for miner in minerlist:
+            print(miner)
+    else:
+        print("The miners list is empty. Exiting...")
 
 
 if __name__ == '__main__':
