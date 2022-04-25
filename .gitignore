@@ -10,3 +10,6 @@ __pycache__
 
 # Databases
 *.db
+
+# Config files
+*.cfg
