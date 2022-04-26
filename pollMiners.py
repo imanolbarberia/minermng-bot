@@ -117,8 +117,8 @@ def db_insert_data(c, miner):
         miner["status"] == 1,
         miner["uptime"],
         miner["hr"],
-        miner["avg_tmps"][0],
-        miner["avg_tmps"][1],
+        miner["avg_tmps"][0] if len(miner["avg_tmps"]) > 0 else 0,
+        miner["avg_tmps"][1] if len(miner["avg_tmps"]) > 1 else 0,
         miner["avg_fans"][0] if len(miner["avg_fans"]) > 0 else 0,
         miner["avg_fans"][1] if len(miner["avg_fans"]) > 1 else 0,
         miner["avg_fans"][2] if len(miner["avg_fans"]) > 2 else 0,
@@ -134,7 +134,6 @@ def db_insert_data(c, miner):
     cur.execute(sql, data)
     c.commit()
     row_id = cur.lastrowid
-    print(row_id)
 
     sql = """INSERT INTO boarddata(entry_id, board_id, hr, tmp_chip, tmp_brd, fan0, fan1, fan2, 
                     fan3, n_tot, n_acc, n_rej, n_err) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)"""
@@ -144,8 +143,8 @@ def db_insert_data(c, miner):
             row_id,
             brd_num,
             brd["hr"],
-            brd["tmps"][0],
-            brd["tmps"][1],
+            brd["tmps"][0] if len(brd["tmps"]) > 0 else 0,
+            brd["tmps"][1] if len(brd["tmps"]) > 1 else 0,
             brd["fans"][0] if len(brd["fans"]) > 0 else 0,
             brd["fans"][1] if len(brd["fans"]) > 1 else 0,
             brd["fans"][2] if len(brd["fans"]) > 2 else 0,
@@ -155,7 +154,6 @@ def db_insert_data(c, miner):
             brd["nonces"][2],
             brd["nonces"][3]
         )
-        print(brd_data)
 
         c.execute(sql, brd_data)
         c.commit()
@@ -258,10 +256,11 @@ def query_miner_data(miner):
                 miner_data["boards"] += [board_data]
 
             miner_data["hr"] = sum([e["hr"] for e in miner_data["boards"]])
-            miner_data["avg_tmps"] = [
-                sum([e["tmps"][0] for e in miner_data["boards"]]) / len(miner_data["boards"]),
-                sum([e["tmps"][1] for e in miner_data["boards"]]) / len(miner_data["boards"])
-            ]
+
+            temps = [e["tmps"] for e in miner_data["boards"]]
+            temps_transposed = [[row[i] for row in temps] for i in range(len(temps[0]))]
+            miner_data["avg_tmps"] = [sum(e)/len(e) for e in temps_transposed]
+
             fan_speeds = [e["fans"] for e in miner_data["boards"]]
             fan_speeds_transposed = [[row[i] for row in fan_speeds] for i in range(len(fan_speeds[0]))]
             miner_data["avg_fans"] = [sum(e)/len(e) for e in fan_speeds_transposed]
