@@ -23,17 +23,91 @@ def create_default_config():
 
 
 def create_db(c):
+    """
+    Create basic DB structure.
+    Tables:
+        - minerlist     -- List of current registered miners
+            * id            -- Miner ID in the DB
+            * name          -- Name of the miner
+            * type          -- Type of miner (kdbox, kd5, ckbox, ...)
+            * ip            -- Current ip of the miner
+
+        - minerdata     -- Average readings for the specified miner
+            * id            -- Reading ID
+            * miner_id      -- ID of the miner (from the 'minerlist' table)
+            * timestamp     -- Timestamp of the reading. Format: "YYYY-MM-DD HH:MM:SS"
+            * status        -- True (1) if miner is online, False (0) if it's offline
+            * uptime        -- Number of minutes the miner has been running
+            * hr            -- Current hashrate of the miner (in MH/s)
+            * tmp_chip      -- Average chip temperature
+            * tmp_brd       -- Average board temperature
+            * fan0..fan3    -- Speed of fans 0 to 3
+            * n_tot         -- Total nonces (across all boards)
+            * n_acc         -- Accepted nonces
+            * n_rej         -- Rejected nonces
+            * n_err         -- Hardware errors
+
+        - boarddata     -- Current readings for each miner boards
+            * id            -- Reading ID
+            * entry_id      -- ID of the associated reading entry (in 'minerdata' table)
+            * board_id      -- ID of the board as part of the miner (0 to n-1, n being the number of boards in a miner)
+            * hr            -- Board hashrate
+            * tmp_chip      -- Average temperature of the chips in the board
+            * tmp_brd       -- Board temperature
+            * fan0..fan3    -- Speed of fans 0 to 3 as reported by the board
+            * n_tot         -- Total nonces (from this board)
+            * n_acc         -- Accepted nonces
+            * n_rej         -- Rejected nonces
+            * n_err         -- Hardware errors
+    :param c:
+    :return:
+    """
     c.execute("""CREATE TABLE IF NOT EXISTS minerlist (
                  id INTEGER PRIMARY KEY AUTOINCREMENT,
                  name TEXT,
                  type TEXT,
-                 ip TEXT);""")
+                 ip TEXT);
+            """)
+
+    c.execute("""CREATE TABLE IF NOT EXISTS minerdata (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                miner_id INTEGER,
+                timestamp TEXT,
+                status BOOLEAN,
+                uptime INTEGER,
+                hr FLOAT,
+                tmp_chip FLOAT,
+                tmp_brd FLOAT,
+                fan0 INTEGER,
+                fan1 INTEGER,
+                fan2 INTEGER,
+                fan3 INTEGER,
+                n_tot INTEGER,
+                n_acc INTEGER,
+                n_rej INTEGER,
+                n_err INTEGER);
+            """)
+
+    c.execute("""CREATE TABLE IF NOT EXISTS boarddata (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                entry_id INTEGER,
+                board_id INTEGER,
+                hr FLOAT,
+                tmp_chip FLOAT,
+                tmp_brd FLOAT,
+                fan0 INTEGER,
+                fan1 INTEGER,
+                fan2 INTEGER,
+                fan3 INTEGER,
+                n_tot INTEGER,
+                n_acc INTEGER,
+                n_rej INTEGER,
+                n_err INTEGER);
+            """)
     c.commit()
 
 
 def query_miner_data(miner):
-    m_type = miner[2]
-    m_ip = miner[3]
     """
     miner_data = {
         status = 1                  # Online = 1 / Offline = 0
@@ -82,6 +156,8 @@ def query_miner_data(miner):
         ]
     }
     """
+    m_type = miner[2]
+    m_ip = miner[3]
     miner_data = {
         "status": 0,
         "uptime": 0,
@@ -91,7 +167,7 @@ def query_miner_data(miner):
         "tot_nonces": [],
         "boards": []
     }
-    
+
     url = "http://www.hallsnet.org/{}.json".format(m_type)
     print("Getting {} ({})...".format(url, m_type))
 
@@ -101,9 +177,7 @@ def query_miner_data(miner):
         print("[ERROR] Connection error")
         r = None
 
-    if r is None:
-        jdata = None
-    else:
+    if r is not None:
         jdata = r.json()["data"]
         # print(jdata)
 
@@ -140,6 +214,9 @@ def query_miner_data(miner):
 
         else:
             pass
+
+    else:
+        pass
 
     return miner_data
 
