@@ -3,8 +3,8 @@
 import sqlite3
 from os import path
 import configparser
-import json
 import requests
+from datetime import datetime
 
 DEFAULT_CONFIG_FILE = "minermon.cfg"
 
@@ -22,7 +22,7 @@ def create_default_config():
     return cfg
 
 
-def create_db(c):
+def db_create(c):
     """
     Create basic DB structure.
     Tables:
@@ -59,8 +59,9 @@ def create_db(c):
             * n_acc         -- Accepted nonces
             * n_rej         -- Rejected nonces
             * n_err         -- Hardware errors
-    :param c:
-    :return:
+
+    :param c: DB connection object
+    :return: Nothing
     """
     c.execute("""CREATE TABLE IF NOT EXISTS minerlist (
                  id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -105,6 +106,59 @@ def create_db(c):
                 n_err INTEGER);
             """)
     c.commit()
+
+
+def db_insert_data(c, miner):
+    sql = """INSERT INTO minerdata(miner_id, timestamp, status, uptime, hr, tmp_chip, tmp_brd, fan0, fan1, fan2, fan3,
+            n_tot, n_acc, n_rej, n_err) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
+    data = (
+        miner["id"],
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        miner["status"] == 1,
+        miner["uptime"],
+        miner["hr"],
+        miner["avg_tmps"][0],
+        miner["avg_tmps"][1],
+        miner["avg_fans"][0] if len(miner["avg_fans"]) > 0 else 0,
+        miner["avg_fans"][1] if len(miner["avg_fans"]) > 1 else 0,
+        miner["avg_fans"][2] if len(miner["avg_fans"]) > 2 else 0,
+        miner["avg_fans"][3] if len(miner["avg_fans"]) > 3 else 0,
+        miner["tot_nonces"][0],
+        miner["tot_nonces"][1],
+        miner["tot_nonces"][2],
+        miner["tot_nonces"][3],
+    )
+
+    # Execute SQL and get last row ID
+    cur = c.cursor()
+    cur.execute(sql, data)
+    c.commit()
+    row_id = cur.lastrowid
+    print(row_id)
+
+    sql = """INSERT INTO boarddata(entry_id, board_id, hr, tmp_chip, tmp_brd, fan0, fan1, fan2, 
+                    fan3, n_tot, n_acc, n_rej, n_err) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)"""
+
+    for brd_num, brd in enumerate(miner["boards"]):
+        brd_data = (
+            row_id,
+            brd_num,
+            brd["hr"],
+            brd["tmps"][0],
+            brd["tmps"][1],
+            brd["fans"][0] if len(brd["fans"]) > 0 else 0,
+            brd["fans"][1] if len(brd["fans"]) > 1 else 0,
+            brd["fans"][2] if len(brd["fans"]) > 2 else 0,
+            brd["fans"][3] if len(brd["fans"]) > 3 else 0,
+            brd["nonces"][0],
+            brd["nonces"][1],
+            brd["nonces"][2],
+            brd["nonces"][3]
+        )
+        print(brd_data)
+
+        c.execute(sql, brd_data)
+        c.commit()
 
 
 def query_miner_data(miner):
@@ -156,20 +210,23 @@ def query_miner_data(miner):
         ]
     }
     """
+    m_id = miner[0]
+    m_name = miner[1]
     m_type = miner[2]
     m_ip = miner[3]
     miner_data = {
+        "id": m_id,
         "status": 0,
         "uptime": 0,
         "hr": 0,
-        "avg_tmps": [],
-        "avg_fans": [],
-        "tot_nonces": [],
+        "avg_tmps": [0, 0],
+        "avg_fans": [0],
+        "tot_nonces": [0, 0, 0, 0],
         "boards": []
     }
 
-    url = "http://www.hallsnet.org/{}.json".format(m_type)
-    print("Getting {} ({})...".format(url, m_type))
+    url = "http://{}/mcb/cgminer?cgminercmd=devs".format(m_ip)
+    print("Getting {} -- {} ({})...".format(url, m_name, m_type))
 
     try:
         r = requests.get(url, timeout=5)
@@ -182,6 +239,7 @@ def query_miner_data(miner):
         # print(jdata)
 
         if len(jdata) > 0:
+            miner_data["id"] = m_id
             miner_data["status"] = 1
             miner_data["uptime"] = jdata[0]["time"]
             miner_data["boards"] = []
@@ -236,15 +294,17 @@ def main():
     dbfile = cfg["DEFAULT"].get("db")
     dbg = (cfg["DEFAULT"].get("debug") == "yes")
     con = sqlite3.connect(dbfile)
-    create_db(con)
+    db_create(con)
 
     res = con.execute("SELECT * FROM minerlist")
     minerlist = res.fetchall()
 
     if len(minerlist) > 0:
         for miner in minerlist:
-            k = query_miner_data(miner)
-            print(k)
+            m_data = query_miner_data(miner)
+            print(m_data)
+            db_insert_data(con, m_data)
+
     else:
         print("The miners list is empty. Exiting...")
 
