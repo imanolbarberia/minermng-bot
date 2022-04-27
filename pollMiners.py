@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+"""
+This script uses Goldshell miner's API to query for miner data:
+- /mcb/cgminer?cgminercmd=devs  -- Query most miner data
+- /mcb/pools                    -- Query currently connected pools
+"""
 
 import sqlite3
 from os import path
@@ -76,6 +81,7 @@ def db_create(c):
                 timestamp TEXT,
                 status BOOLEAN,
                 uptime INTEGER,
+                pool TEXT,
                 hr FLOAT,
                 tmp_chip FLOAT,
                 tmp_brd FLOAT,
@@ -109,13 +115,14 @@ def db_create(c):
 
 
 def db_insert_data(c, miner):
-    sql = """INSERT INTO minerdata(miner_id, timestamp, status, uptime, hr, tmp_chip, tmp_brd, fan0, fan1, fan2, fan3,
-            n_tot, n_acc, n_rej, n_err) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
+    sql = """INSERT INTO minerdata(miner_id, timestamp, status, uptime, pool, hr, tmp_chip, tmp_brd, fan0, fan1, fan2, fan3,
+            n_tot, n_acc, n_rej, n_err) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
     data = (
         miner["id"],
         datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         miner["status"] == 1,
         miner["uptime"],
+        miner["pool"],
         miner["hr"],
         miner["avg_tmps"][0] if len(miner["avg_tmps"]) > 0 else 0,
         miner["avg_tmps"][1] if len(miner["avg_tmps"]) > 1 else 0,
@@ -165,6 +172,7 @@ def query_miner_data(miner):
         status = 1                  # Online = 1 / Offline = 0
         uptime = 234234,
         hr = 14123412.234,          # Total Miner Hashrate (MH/s)
+        pool = "us.pool.com"        # Pool where the miner is connected to
         avg_tmps = [                # Avg temperatures
             123.23,                     # Avg Chip temp
             123.23                      # Avg Board temp
@@ -216,6 +224,7 @@ def query_miner_data(miner):
         "id": m_id,
         "status": 0,
         "uptime": 0,
+        "pool": "(none)",
         "hr": 0,
         "avg_tmps": [0, 0],
         "avg_fans": [0],
@@ -223,11 +232,13 @@ def query_miner_data(miner):
         "boards": []
     }
 
-    url = "http://{}/mcb/cgminer?cgminercmd=devs".format(m_ip)
-    print("Getting {} -- {} ({})...".format(url, m_name, m_type))
+    base_url = "http://{}".format(m_ip)
+    data_url = "{}/mcb/cgminer?cgminercmd=devs".format(base_url)
+    pool_url = "{}/mcb/pools".format(base_url)
+    print("Getting {} -- {} ({})...".format(data_url, m_name, m_type))
 
     try:
-        r = requests.get(url, timeout=5)
+        r = requests.get(data_url, timeout=10)
     except requests.exceptions.ConnectionError:
         print("[ERROR] Connection error")
         r = None
@@ -268,6 +279,23 @@ def query_miner_data(miner):
             tot_nonces = [e["nonces"] for e in miner_data["boards"]]
             tot_nonces_transposed = [[row[i] for row in tot_nonces] for i in range(len(tot_nonces[0]))]
             miner_data["tot_nonces"] = [sum(e) for e in tot_nonces_transposed]
+
+            try:
+                r = requests.get(pool_url, timeout=10)
+            except requests.exceptions.ConnectionError:
+                print("[ERROR] Connection error")
+                r = None
+                pool_str = "(error)"
+
+            if r is not None:
+                jdata = r.json()
+
+                pool_str = "(none)"
+                for p in jdata:
+                    if p["active"] is True:
+                        pool_str = p["url"]
+
+                miner_data["pool"] = pool_str
 
         else:
             pass
