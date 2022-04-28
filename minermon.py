@@ -108,7 +108,7 @@ def cmd_list(bot: telebot.TeleBot, msg: telebot.types.Message):
         lst += "{} {}:\n    {}{} {}{}/{} {}{}% {}{}%\n".format(
             "\U0001F7E2" if row[7] == 1 else "\U0001F534", row[1],
             "\U0001F680", hr,
-            "\U0001F321", "{0:.2f}".format(row[11]), "{0:.2f}".format(row[11]),
+            "\U0001F321", "{0:.2f}".format(row[11]), "{0:.2f}".format(row[12]),
             "\U000026A0", "{0:.2f}".format(100*row[19]/(row[18]+row[19])),
             "\U000026D4", "{0:.2f}".format(100*row[20]/(row[17]))
         )
