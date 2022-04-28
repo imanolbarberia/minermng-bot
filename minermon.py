@@ -3,12 +3,10 @@
 import telebot
 import os
 import sys
-from MinerData import MinerData
+import sqlite3
 
 CFG_BOTTOKEN_FILE = ".telegram/bot_token"
 CFG_USERID_FILE = ".telegram/user_id"
-
-md = MinerData("miners.db")
 
 
 def init_bot():
@@ -49,6 +47,8 @@ def init_bot():
         print("[ERROR]: There was an error initializing the bot. Check that the bot token is correctly defined.")
         exit(2)
 
+    print("Starting MinerMon bot...")
+
     return bot, user_id
 
 
@@ -79,11 +79,39 @@ def cmd_list(bot: telebot.TeleBot, msg: telebot.types.Message):
     :param msg:
     :return:
     """
-    global md
-    mlist = md.get_miners()
+    conn = sqlite3.connect("miners.db")
+    cur = conn.cursor()
+
+    res = cur.execute("""SELECT COUNT(*) FROM minerlist""")
+    num_rows = 0
+    for row in res:
+        num_rows = row[0]
+
+    # Get last entry for each miner
+    res = cur.execute("""SELECT minerlist.*,minerdata.* FROM minerlist 
+                        INNER JOIN minerdata 
+                        ON minerlist.id=minerdata.miner_id 
+                        ORDER BY minerdata.timestamp 
+                        DESC LIMIT {}""".format(num_rows))
+
+    # \U0001F7E2 Green
+    # \U0001F534 Red
     lst = ""
-    for row in mlist:
-        lst += "\U0001F538 {} ({})\n".format(row[1], row[3])
+    for row in res:
+        if row[2] == "stcbox":
+            hr = "{0:.2f} kH/s".format(row[10]*1000)
+        elif row[2] == "ckbox":
+            hr = "{0:.2f} GH/s".format(row[10]/1000)
+        else:
+            hr = "{0:.2f} TH/s".format(row[10]/1000000)
+
+        lst += "{} {}:\n    {}{} {}{}/{} {}{}% {}{}%\n".format(
+            "\U0001F7E2" if row[7] == 1 else "\U0001F534", row[1],
+            "\U0001F680", hr,
+            "\U0001F321", "{0:.2f}".format(row[11]), "{0:.2f}".format(row[11]),
+            "\U000026A0", "{0:.2f}".format(100*row[19]/(row[18]+row[19])),
+            "\U000026D4", "{0:.2f}".format(100*row[20]/(row[17]))
+        )
 
     bot.reply_to(msg, lst)
 
