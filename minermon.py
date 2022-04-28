@@ -113,6 +113,8 @@ def cmd_list(bot: telebot.TeleBot, msg: telebot.types.Message):
             "\U000026D4", "{0:.2f}".format(100*row[20]/(row[17]))
         )
 
+    conn.close()
+
     bot.reply_to(msg, lst)
 
 
