@@ -13,3 +13,6 @@ __pycache__
 
 # Config files
 *.cfg
+
+# Log files
+*.log
